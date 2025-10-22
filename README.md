@@ -4,13 +4,13 @@ A RESTful API service that analyzes strings and stores their computed properties
 
 ## Features
 
-- ✅ String analysis (length, palindrome, character frequency, etc.)
-- ✅ SHA-256 hashing for unique identification
-- ✅ Persistent storage with SQLite
-- ✅ Advanced filtering with query parameters
-- ✅ Natural language query support
-- ✅ Full CRUD operations
-- ✅ Automatic API documentation
+- String analysis (length, palindrome, character frequency, etc.)
+- SHA-256 hashing for unique identification
+- Persistent storage with SQLite
+- Advanced filtering with query parameters
+- Natural language query support
+- Full CRUD operations
+- Automatic API documentation
 
 ## Tech Stack
 
