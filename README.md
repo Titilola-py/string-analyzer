@@ -4,13 +4,13 @@ A RESTful API service that analyzes strings and stores their computed properties
 
 ## Features
 
-- String analysis (length, palindrome, character frequency, etc.)
-- SHA-256 hashing for unique identification
-- Persistent storage with SQLite
-- Advanced filtering with query parameters
-- Natural language query support
-- Full CRUD operations
-- Automatic API documentation
+- ✅ String analysis (length, palindrome, character frequency, etc.)
+- ✅ SHA-256 hashing for unique identification
+- ✅ Persistent storage with SQLite
+- ✅ Advanced filtering with query parameters
+- ✅ Natural language query support
+- ✅ Full CRUD operations
+- ✅ Automatic API documentation
 
 ## Tech Stack
 
@@ -258,4 +258,240 @@ For each analyzed string, the service computes:
 
 ## Natural Language Parser
 
-The NLP parser
+The NLP parser supports various query patterns:
+
+### Word Count Patterns
+- "single word" / "one word" → `word_count=1`
+- "two word" / "2 word" → `word_count=2`
+- "three word" / "3 word" → `word_count=3`
+
+### Length Patterns
+- "longer than X" → `min_length=X+1`
+- "shorter than X" → `max_length=X-1`
+- "at least X characters" → `min_length=X`
+- "at most X characters" → `max_length=X`
+
+### Character Patterns
+- "containing the letter z" → `contains_character=z`
+- "contain x" → `contains_character=x`
+- "first vowel" → `contains_character=a`
+- "last vowel" → `contains_character=u`
+
+### Boolean Patterns
+- "palindrom" / "palindromic" → `is_palindrome=true`
+
+## Project Structure
+
+```
+string-analyzer/
+├── main.py                 # FastAPI app & all endpoints
+├── models.py               # SQLAlchemy database models
+├── schemas.py              # Pydantic validation schemas
+├── database.py             # Database connection & session
+├── analyzer.py             # String analysis logic
+├── nlp_parser.py           # Natural language query parser
+├── requirements.txt        # Python dependencies
+├── .env.example            # Environment template
+├── .gitignore              # Git ignore rules
+├── README.md               # This file
+└── strings.db              # SQLite database (created on first run)
+```
+
+## Dependencies
+
+```
+fastapi==0.104.1          # Web framework
+uvicorn==0.24.0           # ASGI server
+sqlalchemy==2.0.23        # ORM for database
+pydantic==2.5.0           # Data validation
+python-dotenv==1.0.0      # Environment variables
+```
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| DATABASE_URL | Database connection string | sqlite:///./strings.db |
+| PORT | Server port | 8000 |
+
+## Database Schema
+
+**Table: analyzed_strings**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | String (PK) | SHA-256 hash of the string |
+| value | String (Unique) | The actual string value |
+| length | Integer | Character count |
+| is_palindrome | Boolean | Palindrome status |
+| unique_characters | Integer | Distinct character count |
+| word_count | Integer | Word count |
+| sha256_hash | String | SHA-256 hash |
+| character_frequency_map | JSON | Character frequency dict |
+| created_at | DateTime | Timestamp (UTC) |
+
+## Error Handling
+
+The API implements comprehensive error handling:
+
+- **400 Bad Request** - Invalid query parameters or malformed requests
+- **404 Not Found** - Requested resource doesn't exist
+- **409 Conflict** - String already exists (duplicate)
+- **422 Unprocessable Entity** - Invalid data type or conflicting filters
+- **500 Internal Server Error** - Unexpected server errors
+
+## Deployment
+
+### Railway Deployment
+
+1. **Push to GitHub**
+   ```bash
+   git add .
+   git commit -m "Initial commit: String Analyzer Service"
+   git push origin main
+   ```
+
+2. **Create Railway Project**
+   - Go to [railway.app](https://railway.app)
+   - Deploy from GitHub repo
+   - Railway auto-detects Python
+
+3. **Environment Variables**
+   - No special variables needed for SQLite
+   - Railway provides PORT automatically
+
+4. **Generate Domain**
+   - Settings → Networking → Generate Domain
+   - Your API will be live!
+
+### Note on Database
+
+- **Development**: Uses SQLite (file-based)
+- **Production**: SQLite works but consider PostgreSQL for scalability
+- Railway provides free PostgreSQL if needed
+
+## Example Usage Flow
+
+```bash
+# 1. Create some strings
+curl -X POST http://localhost:8000/strings -H "Content-Type: application/json" -d '{"value": "racecar"}'
+curl -X POST http://localhost:8000/strings -H "Content-Type: application/json" -d '{"value": "hello world"}'
+curl -X POST http://localhost:8000/strings -H "Content-Type: application/json" -d '{"value": "level"}'
+
+# 2. Get all palindromes
+curl "http://localhost:8000/strings?is_palindrome=true"
+
+# 3. Use natural language
+curl "http://localhost:8000/strings/filter-by-natural-language?query=all%20single%20word%20palindromic%20strings"
+
+# 4. Get specific string
+curl http://localhost:8000/strings/racecar
+
+# 5. Delete a string
+curl -X DELETE http://localhost:8000/strings/racecar
+```
+
+## Testing Checklist
+
+Before deployment, verify:
+
+- [ ] POST /strings creates and returns correct analysis
+- [ ] POST /strings returns 409 for duplicate strings
+- [ ] GET /strings/{value} returns correct string
+- [ ] GET /strings/{value} returns 404 for non-existent strings
+- [ ] GET /strings returns all strings
+- [ ] GET /strings with filters works correctly
+- [ ] Natural language queries parse correctly
+- [ ] DELETE /strings/{value} removes strings
+- [ ] DELETE /strings/{value} returns 404 for non-existent strings
+- [ ] Database persists data between restarts
+
+## Development Tips
+
+### View Database Contents
+
+```bash
+# Install sqlite3 (if not already installed)
+sqlite3 strings.db
+
+# In sqlite3 prompt:
+.tables                              # List tables
+SELECT * FROM analyzed_strings;      # View all strings
+.exit                                # Exit sqlite3
+```
+
+### Reset Database
+
+```bash
+# Delete the database file
+rm strings.db
+
+# Restart the app to create fresh database
+python main.py
+```
+
+## API Design Decisions
+
+1. **SHA-256 as Primary Key** - Ensures uniqueness and efficient lookups
+2. **Case-Insensitive Palindromes** - More user-friendly ("Racecar" is a palindrome)
+3. **Whitespace in Word Count** - Simple and predictable splitting
+4. **Character Frequency Includes Spaces** - Complete character analysis
+5. **SQLite for Simplicity** - Easy setup, no external dependencies
+6. **Natural Language Parsing** - Pattern-based (no ML needed)
+
+## Known Limitations
+
+1. **NLP Parser** - Supports common patterns but not all English queries
+2. **Contains Character** - Only single character searches (not substrings)
+3. **SQLite Concurrency** - Limited for high-traffic scenarios
+4. **No Pagination** - Returns all results (fine for small datasets)
+
+## Future Enhancements
+
+- [ ] Pagination for large result sets
+- [ ] More sophisticated NLP (using spaCy or transformers)
+- [ ] Substring search support
+- [ ] Case-sensitive filtering options
+- [ ] Export results to CSV/JSON
+- [ ] API rate limiting
+- [ ] Authentication/Authorization
+- [ ] Caching layer for frequent queries
+
+## Troubleshooting
+
+**Database locked error:**
+- SQLite doesn't handle high concurrency well
+- Solution: Use PostgreSQL or reduce concurrent requests
+
+**Module not found:**
+```bash
+# Ensure virtual environment is activated
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+pip install -r requirements.txt
+```
+
+**Port already in use:**
+```bash
+# Change port in .env or:
+PORT=8001 python main.py
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## Author
+
+**Fatimah Olaitan**
+- GitHub: [@Titilola-py](https://github.com/Titilola-py)
+- Email: olaitantitilola2@gmail.com
+
+## Acknowledgments
+
+- Built for HNG13 Backend Stage 1 Task
+- FastAPI for excellent framework and auto-docs
+- SQLAlchemy for powerful ORM capabilities
